@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <title>Animal Wheels Quiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            color: #19283a;
+            padding: 20px;
+            margin: 20px;
+            box-sizing: border-box;
+        }
+
+        h1, h2 {
+            margin-bottom: 10px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        .question-container {
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 10px 20px;
+            display: block;
+        }
+
+        .charts-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        canvas {
+            display: block;
+            max-width: calc(100vw - 40px); /* Screen width minus padding/margin */
+            width: 500px;
+        }
+
+        .download-button {
+            text-align: center;
+            padding: 10px 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Animal Wheels Quiz</h1>
+    <p>From <a href="https://www.amazon.com/Rapport-Four-Ways-Read-People-ebook/dp/B083FFXGSB/" target="_blank">Alison, L., & Alison, E. (2020). <em>Rapport: The four ways to read people</em>. Vermilion.</a></p>
+    <section id="instructions">
+        <h2>Instructions</h2>
+        <ol>
+            <li>Think of how you behave in a single particular environment; at work, with your children, with your in-laws, with your partner - just pick one of these environments. It may be helpful to choose the area you seem to struggle most with currently.</li>
+            <li>Give yourself a score from 0-3 for each description, where 0 is not at all like me and 3 is always like me.</li>
+            <li>Try to go with your gut reaction, don’t overthink it.</li>
+            <li>Of course, you can do more than one of these if you pick a different environment (i.e. fill in one version to represent how you interact with, for example, your partner and another for how you interact, for example, with your boss). The more you fill in the more you will see to what extent you are the same (or different) in different contexts.</li>
+        </ol>
+    </section>
+    <hr>
+    <h2>Rating</h2>
+    <ul>
+        <li>0 = Never like me</li>
+        <li>1 = Occasionally like me</li>
+        <li>2 = Often like me</li>
+        <li>3 = Always like me</li>
+    </ul>
+    <form id="quiz-form">
+        <div id="questions-container">
+            <!-- Questions will be dynamically inserted here -->
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+    <div class="charts-container">
+        <div class="chart-wrapper">
+            <canvas id="good-radar-chart" width="400" height="400"></canvas>
+            <div class="download-button hidden">
+                <button id="download-good-chart">Download Good Wheel</button>
+            </div>
+        </div>
+        <div class="chart-wrapper">
+            <canvas id="bad-radar-chart" width="400" height="400"></canvas>
+            <div class="download-button hidden">
+                <button id="download-bad-chart">Download Bad Wheel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const descriptors = {
+            "GOOD LION": [
+                "GOOD LION",
+                "In charge",
+                "Sets the agenda",
+                "Advises"
+            ],
+            "BAD LION": [
+                "BAD LION",
+                "Bossy",
+                "Demanding",
+                "Pedantic"
+            ],
+            "GOOD LION/MONKEY": [
+                "GOOD LION/MONKEY",
+                "Supportive",
+                "Conversationalist",
+                "Non-Judgemental"
+            ],
+            "BAD LION/MONKEY": [
+                "BAD LION/MONKEY",
+                "Patronizing",
+                "Rescuing",
+                "Parental"
+            ],
+            "GOOD MONKEY": [
+                "GOOD MONKEY",
+                "Social",
+                "Warm",
+                "Friendly"
+            ],
+            "BAD MONKEY": [
+                "BAD MONKEY",
+                "Over-familiar",
+                "Obsequious",
+                "Desperate"
+            ],
+            "GOOD MONKEY/MOUSE": [
+                "GOOD MONKEY/MOUSE",
+                "Respectful",
+                "Trusting",
+                "Admiring"
+            ],
+            "BAD MONKEY/MOUSE": [
+                "BAD MONKEY/MOUSE",
+                "Uncertain",
+                "Hesitant",
+                "Apologetic"
+            ],
+            "GOOD MOUSE": [
+                "GOOD MOUSE",
+                "Modest",
+                "Humble",
+                "Seeking guidance"
+            ],
+            "BAD MOUSE": [
+                "BAD MOUSE",
+                "Disengaged",
+                "Formulaic",
+                "Conflict avoidant"
+            ],
+            "GOOD MOUSE/T-REX": [
+                "GOOD MOUSE/T-REX",
+                "Patient",
+                "Persistent",
+                "Pensive"
+            ],
+            "BAD MOUSE/T-REX": [
+                "BAD MOUSE/T-REX",
+                "Irritable",
+                "Resentful",
+                "Distrusting"
+            ],
+            "GOOD T-REX": [
+                "GOOD T-REX",
+                "Frank",
+                "Forthright",
+                "Direct"
+            ],
+            "BAD T-REX": [
+                "BAD T-REX",
+                "Unfriendly",
+                "Attacking",
+                "Sarcastic"
+            ],
+            "GOOD T-REX/LION": [
+                "GOOD T-REX/LION",
+                "Confident",
+                "Assertive",
+                "Certain"
+            ],
+            "BAD T-REX/LION": [
+                "BAD T-REX/LION",
+                "Argumentative",
+                "Competitive",
+                "Judgemental"
+            ]
+        };
+
+        const questions = {
+            "GOOD LION": [
+                "Advise others about the best way to do things",
+                "Like to be in charge",
+                "Set out a clear plan and expectations for others"
+            ],
+            "BAD LION": [
+                "Don’t let things go easily",
+                "Expect people to do what I say",
+                "Pull people up on small mistakes to make a point"
+            ],
+            "GOOD LION/MONKEY": [
+                "Not judgemental of others",
+                "Supportive and encouraging",
+                "Find it easy to start conversations"
+            ],
+            "BAD LION/MONKEY": [
+                "Use a motherlyfatherly approach",
+                "Talk down to other people",
+                "Fill a silence if it feels awkward or someone is uncomfortable"
+            ],
+            "GOOD MONKEY": [
+                "Often smile and chat to others",
+                "Enjoy the company of other people",
+                "Warm and kind-natured"
+            ],
+            "BAD MONKEY": [
+                "Compliment people to get on their good side",
+                "Self-disclose early in relationships",
+                "Want to be liked by everyone"
+            ],
+            "GOOD MONKEY/MOUSE": [
+                "Treat others with respect",
+                "Naturally trusting of others",
+                "Often compliment or commend others for doing well"
+            ],
+            "BAD MONKEY/MOUSE": [
+                "Feel uncertain or unsure in new situations",
+                "Hesitate if not sure of something",
+                "Apologise even if you haven’t done anything wrong"
+            ],
+            "GOOD MOUSE": [
+                "Apologise if you are in the wrong",
+                "Seek help and support from others",
+                "Not boastful even when you’ve done well"
+            ],
+            "BAD MOUSE": [
+                "Switch off if I feel awkward/uncomfortable",
+                "Avoid conflict whenever possible",
+                "Stay quiet in social situations/try to fade into the background"
+            ],
+            "GOOD MOUSE/T-REX": [
+                "Patient and tolerant of others",
+                "Thoughtful and reflective",
+                "Keep emotions contained"
+            ],
+            "BAD MOUSE/T-REX": [
+                "Feel irritated by other people",
+                "Naturally distrustful of others",
+                "Resent it when others do well"
+            ],
+            "GOOD T-REX": [
+                "Clear and concise",
+                "Direct and to the point",
+                "Can give critical feedback without offending"
+            ],
+            "BAD T-REX": [
+                "Like to verbally spar with others",
+                "Use sarcasm in arguments",
+                "Think others should pay for their mistakes"
+            ],
+            "GOOD T-REX/LION": [
+                "Confident",
+                "Certain about your own views and opinions",
+                "Assertive when challenging someone"
+            ],
+            "BAD T-REX/LION": [
+                "Like to have the last word in arguments",
+                "Enjoy a good argument with someone",
+                "Judge other people’s behaviour if it fails your own standards"
+            ]
+        };
+
+        const scales = [0, 1, 2, 3];
+
+        const form = document.getElementById('quiz-form');
+        const questionsContainer = document.getElementById('questions-container');
+
+        // Generate the form dynamically
+        Object.keys(questions).forEach(category => {
+            questions[category].forEach((question, index) => {
+                const questionContainer = document.createElement('div');
+                questionContainer.className = 'question-container';
+                questionContainer.innerHTML = `
+                    <label><strong>${question}</strong></label><br><br>
+                    Never like me
+                    ${scales.map(scale => `
+                        <input type="radio" name="${category}-${index}" value="${scale}" checked required>
+                    `).join('')}
+                    Always like me
+                    <hr>
+                `;
+                questionsContainer.appendChild(questionContainer);
+            });
+        });
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(form);
+
+            const goodScores = {};
+            const badScores = {};
+
+            Object.keys(questions).forEach(category => {
+                const targetScores = category.startsWith('GOOD') ? goodScores : badScores;
+                targetScores[category] = 0;
+                questions[category].forEach((_, index) => {
+                    targetScores[category] += parseInt(formData.get(`${category}-${index}`) || 0);
+                });
+            });
+
+            var existingGoodChart = Chart.getChart('good-radar-chart');
+            if (existingGoodChart) {
+                existingGoodChart.destroy();
+            }
+
+            var existingBadChart = Chart.getChart('bad-radar-chart');
+            if (existingBadChart) {
+                existingBadChart.destroy();
+            }
+
+            const createRadarChart = (canvasId, labels, data, label, backgroundColor, borderColor) => {
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: label,
+                            data: data,
+                            backgroundColor: backgroundColor,
+                            borderColor: borderColor,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            r: {
+                                suggestedMin: 0,
+                                suggestedMax: 9,
+                            }
+                        }
+                    }
+                });
+            };
+
+            goodLabels = Object.keys(goodScores).map(item => descriptors[item] || []);
+            createRadarChart('good-radar-chart', goodLabels, Object.values(goodScores), 'Good Wheel', 'rgba(75, 192, 192, 0.2)', 'rgba(75, 192, 192, 1)');
+            badLabels = Object.keys(badScores).map(item => descriptors[item] || []);
+            createRadarChart('bad-radar-chart', badLabels, Object.values(badScores), 'Bad Wheel', 'rgba(255, 99, 132, 0.2)', 'rgba(255, 99, 132, 1)');
+
+            document.querySelectorAll('.download-button').forEach(button => button.classList.remove('hidden'));
+            document.getElementById('good-radar-chart').scrollIntoView({
+                behavior: 'smooth', // Optional: for smooth scrolling
+                block: 'start' // Scroll so that the chart is at the top of the viewport
+            });
+        });
+
+        document.getElementById('download-good-chart').addEventListener('click', function() {
+            const canvas = document.getElementById('good-radar-chart');
+            const context = canvas.getContext('2d');
+            context.save();
+            context.globalCompositeOperation = 'destination-over';
+            context.fillStyle = 'white';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.restore();
+            const link = document.createElement('a');
+            link.download = 'good-radar-chart.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+
+        document.getElementById('download-bad-chart').addEventListener('click', function() {
+            const canvas = document.getElementById('bad-radar-chart');
+            const context = canvas.getContext('2d');
+            context.save();
+            context.globalCompositeOperation = 'destination-over';
+            context.fillStyle = 'white';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.restore();
+            const link = document.createElement('a');
+            link.download = 'bad-radar-chart.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    </script>
+</body>
+</html>
